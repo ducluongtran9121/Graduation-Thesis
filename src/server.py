@@ -180,7 +180,7 @@ class Server(object):
         selected_total_size = 0
         if self.defence_mode == 'AE':
             for it, idx in tqdm(enumerate(sampled_client_indices), leave=False):
-                if 1 <= self._round <= 1 and 1 <= it <= 4:
+                if 1 <= self._round <= 2 and 1 <= it <= 4:
                     continue
                 self.clients[idx].client_update()
                 selected_total_size += len(self.clients[idx])
@@ -339,16 +339,18 @@ class Server(object):
                     plr = list(self.clients[idx].model.named_parameters())[-4][1].detach().numpy()
                 AE_input.append(plr)
             if 1 <= self._round <= 2:
-                print('LENGTH:', len(AE_input))
                 self.AE.train(AE_input)
             else:
                 global_plr = list(self.model.named_parameters())[-4][1].detach().numpy()
                 poisoning_idx = self.AE.test_latentspace(global_plr, AE_input, sampled_client_indices)
-                print('[!] Detected: ', poisoning_idx)
+                # poisoning_idx = self.AE.test_IO(AE_input, sampled_client_indices)
+                message = f"[!] Detected: {poisoning_idx}"
+                print(message); logging.info(message)
+                del message
             
             for it, idx in tqdm(enumerate(sampled_client_indices), leave=False):
                 if len(poisoning_idx) != 0:
-                    if poisoning_idx[idx] == 1:
+                    if poisoning_idx[idx] == 1 and it < 5:
                         continue
                 local_weights = self.clients[idx].model.state_dict()
                 for key in self.model.state_dict().keys():

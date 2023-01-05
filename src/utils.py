@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.init as init
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-
+from .GAN import Generator
 from torch.utils.data import Dataset, TensorDataset, ConcatDataset
 
 logger = logging.getLogger(__name__)
@@ -163,6 +163,26 @@ def create_datasets(dataset_name, num_clients, iid, attack_mode):
         if attack_mode in ['Label-Flipping']:
             datasets = list()
             # Label Flipping for 4 attackers
+            for i in range(num_clients):
+                if 0 < i < 5:
+                    labels = split_datasets[i][1].cpu().detach().numpy()
+                    new_labels = np.array([abs(s-1) for s in labels])
+                    datasets.append((split_datasets[i][0], torch.Tensor(new_labels)))
+                else:
+                    datasets.append((split_datasets[i][0], split_datasets[i][1]))
+            # finalize bunches of local datasets
+            local_datasets = [
+                CustomTensorDataset(local_dataset)
+                for local_dataset in datasets
+                ]
+        elif attack_mode in ['GAN']:
+            G_INOUT_DIM = training_inputs.shape[1]
+            gan_model = Generator(G_INOUT_DIM, G_INOUT_DIM)
+            g_param = torch.load('',map_location=lambda x,y:x)
+            gan_model.load_state_dict(g_param)
+            gan_model.eval()
+            datasets = list()
+            # GAN for 4 attackers
             for i in range(num_clients):
                 if 0 < i < 5:
                     labels = split_datasets[i][1].cpu().detach().numpy()
