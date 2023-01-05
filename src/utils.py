@@ -142,15 +142,41 @@ def create_datasets(dataset_name, num_clients, iid, attack_mode):
         training_dataset = dataset.sample(frac=0.70)
         testing_dataset = dataset.drop(training_dataset.index)
 
-    training_inputs, training_labels = preprocessing_training_dataset(training_dataset, dataset_name)
-    testing_inputs, testing_labels = preprocessing_training_dataset(testing_dataset, dataset_name)
+    # Ember dataset
+    else:
+        path = "..."
+        train_size = 800000
+        test_size = 200000
+        columns = 2381
+        X_train = np.memmap(path+"X_train.dat", dtype=np.float32, mode="r", shape=(train_size, columns))
+        y_train = np.memmap(path+"y_train.dat", dtype=np.float32, mode="r", shape=train_size)
+        X_test = np.memmap(path+"X_test.dat", dtype=np.float32, mode="r", shape=(test_size, columns))
+        y_test = np.memmap(path+"y_test.dat", dtype=np.float32, mode="r", shape=test_size)
 
+        train_rows = (y_train != -1)
+        X_train = X_train[train_rows]
+        y_train = y_train[train_rows]
+
+        test_rows = (y_test != -1)
+        X_test = X_test[test_rows]
+        y_test = y_test[test_rows]
+
+        X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
+        X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
+
+    if dataset_name not in ["Ember"]:        
+        training_inputs, training_labels = preprocessing_training_dataset(training_dataset, dataset_name)
+        testing_inputs, testing_labels = preprocessing_training_dataset(testing_dataset, dataset_name)
+    else:
+        training_inputs, training_labels = X_train, y_train
+        testing_inputs, testing_labels = X_test, y_test
+        
     # split dataset according to iid flag
     if iid:
         # shuffle data
         shuffled_indices = torch.randperm(len(training_inputs))
         training_inputs = training_inputs[shuffled_indices]
-        training_labels = torch.Tensor(training_labels.to_numpy())[shuffled_indices]
+        training_labels = torch.Tensor(training_labels)[shuffled_indices]
 
         # partition data into num_clients
         split_size = len(training_dataset) // num_clients
@@ -175,26 +201,6 @@ def create_datasets(dataset_name, num_clients, iid, attack_mode):
                 CustomTensorDataset(local_dataset)
                 for local_dataset in datasets
                 ]
-        elif attack_mode in ['GAN']:
-            G_INOUT_DIM = training_inputs.shape[1]
-            gan_model = Generator(G_INOUT_DIM, G_INOUT_DIM)
-            g_param = torch.load('',map_location=lambda x,y:x)
-            gan_model.load_state_dict(g_param)
-            gan_model.eval()
-            datasets = list()
-            # GAN for 4 attackers
-            for i in range(num_clients):
-                if 0 < i < 5:
-                    labels = split_datasets[i][1].cpu().detach().numpy()
-                    new_labels = np.array([abs(s-1) for s in labels])
-                    datasets.append((split_datasets[i][0], torch.Tensor(new_labels)))
-                else:
-                    datasets.append((split_datasets[i][0], split_datasets[i][1]))
-            # finalize bunches of local datasets
-            local_datasets = [
-                CustomTensorDataset(local_dataset)
-                for local_dataset in datasets
-                ]
         else:
             # finalize bunches of local datasets
             local_datasets = [
@@ -204,7 +210,7 @@ def create_datasets(dataset_name, num_clients, iid, attack_mode):
         
         shuffled_indices = torch.randperm(len(testing_inputs))
         testing_inputs = testing_inputs[shuffled_indices]
-        testing_labels = torch.Tensor(testing_labels.to_numpy())[shuffled_indices]
+        testing_labels = torch.Tensor(testing_labels)[shuffled_indices]
 
         testing_dataset = list(
             zip(
