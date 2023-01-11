@@ -201,8 +201,26 @@ def create_datasets(dataset_name, num_clients, iid, attack_mode):
                 CustomTensorDataset(local_dataset)
                 for local_dataset in datasets
                 ]
+
         elif attack_mode in ['GAN']:
-            pass
+            GAN_dim = training_inputs.shape[2]
+            gan = Generator(GAN_dim, GAN_dim)
+            g_param = th.load('...',map_location=lambda x,y:x)
+            gan.load_state_dict(g_param)
+            datasets = list()
+            # GAN for 4 attackers
+            for i in range(num_clients):
+                if 0 < i < 5:
+                    mutated_samples, mutated_labels = gan.generate(split_datasets[i])
+                    datasets.append((mutated_samples, mutated_labels))
+                else:
+                    datasets.append((split_datasets[i][0], split_datasets[i][1]))
+            # finalize bunches of local datasets
+            local_datasets = [
+                CustomTensorDataset(local_dataset)
+                for local_dataset in datasets
+                ]
+
         else:
             # finalize bunches of local datasets
             local_datasets = [
