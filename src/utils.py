@@ -122,7 +122,7 @@ def preprocessing_training_dataset(dataset, dataset_name):
     mms = MinMaxScaler().fit(trainx)
     trainx = mms.transform(trainx)
     trainx = np.reshape(trainx, (trainx.shape[0], 1, trainx.shape[1]))
-    return trainx, trainy
+    return trainx, trainy.to_numpy()
 
 
 def create_datasets(dataset_name, num_clients, iid, attack_mode):
@@ -144,9 +144,9 @@ def create_datasets(dataset_name, num_clients, iid, attack_mode):
 
     # Ember dataset
     else:
-        path = "..."
-        train_size = 800000
-        test_size = 200000
+        path = "/home/haochu/Documents/Federated-Averaging-PyTorch/ember/"
+        train_size = 400000
+        test_size = 100000
         columns = 2381
         X_train = np.memmap(path+"X_train.dat", dtype=np.float32, mode="r", shape=(train_size, columns))
         y_train = np.memmap(path+"y_train.dat", dtype=np.float32, mode="r", shape=train_size)
@@ -179,7 +179,7 @@ def create_datasets(dataset_name, num_clients, iid, attack_mode):
         training_labels = torch.Tensor(training_labels)[shuffled_indices]
 
         # partition data into num_clients
-        split_size = len(training_dataset) // num_clients
+        split_size = len(training_inputs) // num_clients
         split_datasets = list(
             zip(
                 torch.split(torch.Tensor(training_inputs), split_size),
@@ -201,6 +201,8 @@ def create_datasets(dataset_name, num_clients, iid, attack_mode):
                 CustomTensorDataset(local_dataset)
                 for local_dataset in datasets
                 ]
+        elif attack_mode in ['GAN']:
+            pass
         else:
             # finalize bunches of local datasets
             local_datasets = [
@@ -214,8 +216,8 @@ def create_datasets(dataset_name, num_clients, iid, attack_mode):
 
         testing_dataset = list(
             zip(
-                torch.split(torch.Tensor(testing_inputs), len(testing_dataset)), 
-                torch.split(torch.Tensor(testing_labels), len(testing_dataset))
+                torch.split(torch.Tensor(testing_inputs), len(testing_inputs)), 
+                torch.split(torch.Tensor(testing_labels), len(testing_labels))
                 )
             )
 

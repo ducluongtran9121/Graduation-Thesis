@@ -12,14 +12,14 @@ data_config:
 fed_config:
   C: 1
   K: 10
-  R: 12
+  R: 10
   E: 3
   B: 2048
   criterion: torch.nn.CrossEntropyLoss
   optimizer: torch.optim.SGD
   attack_mode: 'Model-Poisoning'
-  defence_mode: 'AE'
-  scale_attack: -100
+  defence_mode: ''
+  scale_attack: -3
 ---
 optim_config:
   lr: 0.001
@@ -33,8 +33,8 @@ init_config:
 model_config: 
   name: CNN
   in_channels: 1
-  hidden_channels: 64
-  num_hiddens: 64
+  hidden_channels: 64 # Ember
+  num_hiddens: 64 # Ember
   num_classes: 2
 ---
 log_config:

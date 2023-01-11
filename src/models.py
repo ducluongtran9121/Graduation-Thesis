@@ -176,7 +176,7 @@ class AE(nn.Module):
     def __init__(self) -> None:
         super(AE, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Linear(14464, 512),
+            nn.Linear(152256, 512),
             nn.ReLU(True),
             nn.Linear(512, 128),
             nn.ReLU(True), 
@@ -191,7 +191,7 @@ class AE(nn.Module):
             nn.ReLU(True),
             nn.Linear(128, 512),
             nn.ReLU(True), 
-            nn.Linear(512, 14464), 
+            nn.Linear(512, 152256), 
             nn.Tanh()
             )
     
